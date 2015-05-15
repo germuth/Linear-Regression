@@ -93,7 +93,7 @@ public class Main {
 			while(s.hasNextLine()){
 				String line = s.nextLine();
 				Scanner lineScanner = new Scanner(line);
-				list.add(new TrainingData(lineScanner.nextInt(), lineScanner.nextInt()));
+				list.add(new TrainingData(lineScanner.nextDouble(), lineScanner.nextDouble()));
 			}
 			s.close();
 		} catch (FileNotFoundException e) {
@@ -104,9 +104,9 @@ public class Main {
 	}
 	
 }class TrainingData{
-	public int input;
-	public int output;
-	public TrainingData(int i, int o){
+	public double input;
+	public double output;
+	public TrainingData(double i, double o){
 		input = i;
 		output = o;
 	}
