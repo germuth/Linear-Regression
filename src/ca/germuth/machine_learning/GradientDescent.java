@@ -1,51 +1,48 @@
 package ca.germuth.machine_learning;
 
-import java.util.ArrayList;
-import ca.germuth.machine_learning.Main;
+import Jama.Matrix;
 
 public class GradientDescent {
-//	private static final double LEARNING_RATE = 0.33; //set 1
-//	private static final double LEARNING_RATE = 0.33; //set 2
-	private static final double LEARNING_RATE = 0.0242; // set 3
-	
-//	private static final double LEARNING_RATE = 0.0000001; 	//set 4 no norm
-//	private static final double LEARNING_RATE = 0.40;		//set 4 with norm
-	
-	public static double[] run(ArrayList<TrainingData> training, boolean printError) {
-		int numFeatures = training.get(0).input.length;
-		// y = Th0 + Th1*x1 + Th2*x2 + Th3*x3 + etc...
+	//TODO these should be parameters
+	public static Matrix run(Matrix X, Matrix y, final int NUM_ITERATIONS, final double LEARNING_RATE, boolean printError) {
+		//n = number of features (including fake feature)
+		int n = X.getColumnDimension();
+		//m = number of training tuples
+		int m = X.getRowDimension();
 		
 		// initialize theta to be all ones, just need a starting state
-		double[] theta = new double[numFeatures];
-		for (int i = 0; i < theta.length; i++) {
-			theta[i] = 1.0;
+		double[][] thetaArr = new double[n][1];
+		for (int i = 0; i < thetaArr.length; i++) {
+			thetaArr[i][0] = 0.0;
 		}
+		Matrix theta = new Matrix(thetaArr);
 
-		double currError = Main.error(theta, training);
+		double currError = Main.error(theta, X, y);
+		if(printError){
+			System.out.println("Error before: " + currError);
+		}
 		// difficult to test for convergence, so rather
 		// just do 100 fixed iterations
-		for (int i = 0; i < 1000; i++) {
-			// take derivative of cost function
-			// see https://chrisjmccormick.wordpress.com/2014/03/04/gradient-descent-derivation/
+		for (int i = 0; i < NUM_ITERATIONS; i++) {
 			// where x(0) = 1.0
 
-			double[] newTheta = new double[numFeatures];
+			double[][] newTheta = new double[n][1];
 			// for each feature, calc partial derivative
 			// dJ/d(theta) = 1/m * sum( predicted - actual ) * x(i)
-			for (int j = 0; j < numFeatures; j++) {
+			for (int j = 0; j < n; j++) {
 				double deriv = 0.0;
-				for (int k = 0; k < training.size(); k++) {
-					TrainingData curr = training.get(k);
-					deriv += (Main.predict(theta, curr.input) - curr.output) * curr.input[j];
+				for (int row = 0; row < m; row++) {
+					deriv += (Main.predict(theta, X.getMatrix(row, row, 0, n-1)) - y.getArray()[row][0]) * X.getArray()[row][j];
 				}
-				deriv /= training.size();
-				newTheta[j] = theta[j] - LEARNING_RATE * deriv;
+				newTheta[j][0] = theta.getArray()[j][0] - LEARNING_RATE * deriv / m;
 			}
 
-			theta = newTheta;
+			theta = new Matrix(newTheta);
 
-			currError = Main.error(theta, training);
-			System.out.println(currError);
+			currError = Main.error(theta, X, y);
+			if(printError){
+				System.out.println(currError);				
+			}
 		}
 		return theta;
 	}

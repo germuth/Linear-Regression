@@ -16,3 +16,5 @@ Which corresponds to the dotted line below.
 ![graph](https://cloud.githubusercontent.com/assets/3782710/7625712/4a5f127c-f9b0-11e4-9780-d9ec5100033d.png)
 
 This example input data comes from the Coursera course on Machine Learning by Andrew Ng. 
+
+This repository makes use of JAMA: A Java Matrix Package
