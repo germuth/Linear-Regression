@@ -16,7 +16,7 @@ import Jama.Matrix;
  *
  */
 public class Main {
-	private static final String TRAINING_FILE = "training_data_3.txt";
+	private static final String TRAINING_FILE = "training_data_4.txt";
 	
 	//input training examples
 	//each row is all one training tuple
@@ -25,6 +25,7 @@ public class Main {
 	//one column of outputs for each training tuple
 	private static Matrix y;
 	
+	private static boolean NORMALIZED;
 	public static void main(String[] args) {
 		DecimalFormat df = new DecimalFormat();
 		df.setMaximumFractionDigits(3);
@@ -35,7 +36,8 @@ public class Main {
 		//normalize so all features have the same distribution
 		//approximately -2.5 <-> 2.5
 		//gradient descent converges poorly when features are out of proportion
-//		normalize(training);
+//		normalize();
+		NORMALIZED = false;
 		
 		//add fake feature to bias so that we can matrix multiple
 		//for ex. 
@@ -44,8 +46,11 @@ public class Main {
 		//so we add a column of ones to input
 		addFakeFeature();
 
-		Matrix theta = GradientDescent.run(X, y, 1500, 0.01, false);
-//		Matrix theta = NormalEquation.run(training);
+		//experiment 3
+//		Matrix theta = GradientDescent.run(X, y, 1500, 0.01, false);
+		//experiment 4
+//		Matrix theta = GradientDescent.run(X, y, 400, 0.03, false);
+		Matrix theta = NormalEquation.run(X, y);
 		
 		//display results
 		int n = theta.getRowDimension();
@@ -74,6 +79,9 @@ public class Main {
 			in[0][0] = 1.0;
 			for(int i = 1; i < n; i++){
 				in[0][i] = s.nextDouble();
+				if(NORMALIZED){
+					in[0][i] = (in[0][i] - FEATURE_MEAN[i - 1]) / FEATURE_STD[i - 1];
+				}
 			}
 			Matrix x = new Matrix(in);
 			//TODO need to normalize input features if training set is normalized
@@ -116,38 +124,42 @@ public class Main {
 		X = new Matrix(newX);
 	}
 	
-	public static ArrayList<TrainingData> normalize(ArrayList<TrainingData> training){
-		int numFeatures = training.get(0).input.length;
+	private static double[] FEATURE_MEAN;
+	private static double[] FEATURE_STD;
+	public static void normalize(){
+		int m = X.getRowDimension();
+		int n = X.getColumnDimension();
+		
+		FEATURE_MEAN = new double[n];
+		FEATURE_STD  = new double[n];
 		//for each feature
-		for(int i = 0; i < numFeatures; i++){
-			//get all values, find max and min
-			double MAX = Double.MIN_VALUE;
-			double MIN = Double.MAX_VALUE;
-			ArrayList<Double> allValues = new ArrayList<Double>();
-			for(int j = 0; j < training.size(); j++){
-				double val = training.get(j).input[i];
-				if(val > MAX){
-					MAX = val;
-				}
-				if(val < MIN){
-					MIN = val;
-				}
-				allValues.add(val);
+		for(int col = 0; col < n; col++){
+			//get all values, for given feature
+			double[][] features = X.getMatrix(0, m-1, col, col).getArray();
+			
+			//calculate mean
+			FEATURE_MEAN[col] = 0;
+			for(int i = 0; i < m; i++){
+				FEATURE_MEAN[col] += features[i][0];
 			}
+			FEATURE_MEAN[col] /= m;
+			
+			//calculate standard deviation
+			FEATURE_STD[col] = 0;
+			for(int i = 0; i < m; i++){
+				FEATURE_STD[col] += Math.pow((features[i][0] - FEATURE_MEAN[col]), 2);
+			}
+			FEATURE_STD[col] /= m;
+			FEATURE_STD[col] = Math.sqrt(FEATURE_STD[col]);
 			
 			//okay now replace values with normalized
-			for(int j = 0; j < training.size(); j++){
-				double val = training.get(j).input[i];
-				//gives range between 0 <-> 1
-				val = (val - MIN) / (MAX - MIN);
-				//range between 0 <-> 2
-				val *= 2;
-				//range between -1 <-> 1
-				val -= 1.0;
-				training.get(j).input[i] = val;
+			//normalized means (val - mean) / std
+			for(int j = 0; j < m; j++){
+				double val = X.getArray()[j][col];
+				val = (val - FEATURE_MEAN[col]) / FEATURE_STD[col];
+				X.getArray()[j][col] = val;
 			}
 		}
-		return training;
 	}
 	
 	public static void readTrainingData(){ 

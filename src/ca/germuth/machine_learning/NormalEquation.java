@@ -1,13 +1,13 @@
 package ca.germuth.machine_learning;
 
-import java.util.ArrayList;
+import Jama.Matrix;
 
 public class NormalEquation {
-	public double[] run(ArrayList<TrainingData> training){
-		//TODO
+	public static Matrix run(Matrix X, Matrix y){
 		//theta = inv(X' * X) * X' * y
-		
-		//need to add matrix operations
-		return null;
+		Matrix op1 = X.transpose();
+		Matrix op2 = (op1.times(X)).inverse();
+		Matrix op3 = op2.times(op1).times(y);
+		return op3;
 	}
 }
