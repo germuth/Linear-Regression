@@ -2,6 +2,7 @@ package ca.germuth.machine_learning;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -9,14 +10,14 @@ import java.util.Scanner;
 import Jama.Matrix;
 
 /**
- * Multi Variate Linear Regression
+ * Multi Variate Linear Regression 
  * 	Currently has Potential to use Gradient Descent or the Normal Equation
  * 	to solve multi variable linear regression
  * @author Aaron
  *
  */
 public class Main {
-	private static final String TRAINING_FILE = "training_data_4.txt";
+	private static final String TRAINING_FILE = "training_data_5.txt";
 	
 	//input training examples
 	//each row is all one training tuple
@@ -25,35 +26,44 @@ public class Main {
 	//one column of outputs for each training tuple
 	private static Matrix y;
 	
-	private static boolean NORMALIZED;
+	private static boolean NORMALIZED = false;
+	private static boolean REGULARIZED = false;
+	private static boolean DEBUG_INFO = false;
+	
+	//to what extent we punish non-zero theta
+	private static double LAMBDA = 1.0;
+	
 	public static void main(String[] args) {
-		DecimalFormat df = new DecimalFormat();
-		df.setMaximumFractionDigits(3);
-		
-		//initialize X and y
+		//initialize X and y0
 		readTrainingData();
+		
+		//add features such as x1*x2, x1^2, x2^2
+		add2ndDegreeFeatures();
 		
 		//normalize so all features have the same distribution
 		//approximately -2.5 <-> 2.5
 		//gradient descent converges poorly when features are out of proportion
 //		normalize();
-		NORMALIZED = false;
 		
 		//add fake feature to bias so that we can matrix multiple
 		//for ex. 
 		// y = th1 * x1 + th0 -> y = th1 * x1 + th0 * x0
 		//x0, the fake feature, is always 1
 		//so we add a column of ones to input
-		addFakeFeature();
-
+		addBiasFeature();
+		
 		//experiment 3
-//		Matrix theta = GradientDescent.run(X, y, 1500, 0.01, false);
+//		Matrix theta = GradientDescent.run(X, y, 1500, 0.01, LAMBDA, REGULARIZED, DEBUG_INFO);
 		//experiment 4
-//		Matrix theta = GradientDescent.run(X, y, 400, 0.03, false);
-		Matrix theta = NormalEquation.run(X, y);
+//		Matrix theta = GradientDescent.run(X, y, 400, 0.03, LAMBDA, REGULARIZED, DEBUG_INFO);
+//		Matrix theta = NormalEquation.run(X, y);
+		//experiment 5
+		Matrix theta = GradientDescent.run(X, y, 25, 0.0001, LAMBDA, REGULARIZED, DEBUG_INFO);
 		
 		//display results
 		int n = theta.getRowDimension();
+		DecimalFormat df = new DecimalFormat();
+		df.setMaximumFractionDigits(3);
 		
 		System.out.println("Best Estimate for Equation:");
 		String str = "y = ";
@@ -86,6 +96,9 @@ public class Main {
 			Matrix x = new Matrix(in);
 			//TODO need to normalize input features if training set is normalized
 			System.out.println("Expected Output is " + predict(theta, x));
+			
+			System.out.println("Press Y to predict an input, and N to close program");
+			token = s.next().toLowerCase();
 		}
 		s.close();
 	}
@@ -105,11 +118,57 @@ public class Main {
 			double actual = y.getArray()[row][0];
 			double diff = predicted - actual;
 			error += Math.pow(diff, 2);
+			
 		}
+		//punish each theta for having non-zero values
+		//should help avoid overfitting(tends to make unneeded features 0)
+		if (REGULARIZED) {
+			//feature start at 1 to avoid editing bias (theta0)
+			for (int feature = 1; feature < n; feature++) {
+				//TODO: would be more efficient is only did LAMBDA multiplication once at end of sum
+				error += LAMBDA * Math.pow(theta.getArray()[feature][0], 2);
+			}
+		}
+		
 		return error / (2 * m);
 	}
+	//will add features in the following way
+	//	x1	  x2	x1x1	x1x2	x2x2
+	//	---old--	-------new----------
+	//	or
+	//	x1	 x2	  x3	x1x1	x1x2	x1x3	x2x2	x2x3	x3x3
+	//	---old------    -----------------new-------------------------
+	private static void add2ndDegreeFeatures(){
+		int n = X.getColumnDimension();
+		//number of ways to select two from n, with repitition, without order 
+		//(Combination with rep)
+		int k = 2;
+		int newFeatures = combination(n + k - 1, k);
+		
+		double[][] soFar = X.getArray();
+		double[][] newX = new double[soFar.length][soFar[0].length + newFeatures];
+		//fill in old part of matrix
+		for(int i = 0; i < newX.length; i++){
+			for(int j = 0; j < n; j++){
+				newX[i][j] = soFar[i][j];					
+			}
+		}
+		//fill in new part of matrix
+		for(int i = 0; i < newX.length; i ++){
+			//feature 1
+			for(int f1 = 0; f1 < n; f1++){
+				//feature 2
+				for(int f2 = f1; f2 < n; f2++){
+					double newFeature = soFar[i][f1] * soFar[i][f2];
+					//add to matrix
+					newX[i][n + f1 + f2] = newFeature;
+				}
+			}
+		}
+		X = new Matrix(newX);
+	}
 	
-	private static void addFakeFeature() {
+	private static void addBiasFeature() {
 		double[][] soFar = X.getArray();
 		double[][] newX = new double[soFar.length][soFar[0].length + 1];
 		for(int i = 0; i < newX.length; i++){
@@ -127,6 +186,7 @@ public class Main {
 	private static double[] FEATURE_MEAN;
 	private static double[] FEATURE_STD;
 	public static void normalize(){
+		NORMALIZED = true;
 		int m = X.getRowDimension();
 		int n = X.getColumnDimension();
 		
@@ -205,8 +265,18 @@ public class Main {
 		X = new Matrix(input);
 		y = new Matrix(output);
 	}
-	
-}class TrainingData{
+
+	// computes n choose k for big integers
+	private static int combination(int n, int k) {
+		int answer = 1;
+		for (int i = 0; i < k; i++) {
+			answer = answer * (n - i) / (i + 1);
+		}
+		return answer;
+	}
+
+}
+class TrainingData {
 	public double[] input;
 	public double output;
 	public TrainingData(double[] i, double o){
