@@ -1,7 +1,8 @@
-Linear-Regression
-Machine Learning a Linear Function using Gradient Descent and the Normal Equation
+Linear Regression
+=================
+Linear Regression with Gradient Descent and the Normal Equation
 
-This repository is a small java program which learns the best fit line of a series of data points. This is the most basic form of supervised machine learning.
+This repository is a small java program which learns the "best fit line" of a series of data points. This is the most basic form of supervised machine learning.
 
 For example, trying to learn the two variables of a line, M and B from the linear equation: y = Mx + B
 
@@ -16,5 +17,7 @@ Which corresponds to the dotted line below.
 ![graph](https://cloud.githubusercontent.com/assets/3782710/7625712/4a5f127c-f9b0-11e4-9780-d9ec5100033d.png)
 
 This example input data comes from the Coursera course on Machine Learning by Andrew Ng. 
+
+Linear Regression can learn non-linear functions such as higher order polynomials as well, as long as you choose non-linear features (for example, see training example 5). 
 
 This repository makes use of JAMA: A Java Matrix Package
